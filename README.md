@@ -1,246 +1,168 @@
-# Diet Recipe App 🥗
+# Diet Recipe Generator 🍽️
 
-A full-stack application with FastAPI backend and Next.js frontend that uses GPT-4 to generate vegetarian and vegan dinner recipes based on your dietary preferences.
+A beautiful FastAPI web application that generates personalized dinner recipes based on your dietary preferences using OpenAI's GPT-4.
 
 ## Features
 
-- 🌱 Support for vegetarian and vegan diets
-- 🤖 Powered by OpenAI's GPT-4
-- 📝 Simple, easy-to-follow recipes
-- 🚀 Fast and lightweight FastAPI backend
-- ⚛️ Modern Next.js frontend with React 18.3.1
-- 🎨 Beautiful UI with Tailwind CSS and shadcn/ui
-- 📚 Interactive API documentation with Swagger UI
-- ☁️ Easy deployment to Vercel
+- 🥗 **Dietary Preferences**: Choose from Vegetarian, Vegan, or No Restrictions
+- 🤖 **AI-Powered**: Uses OpenAI GPT-4 for intelligent recipe generation
+- 🎨 **Beautiful UI**: Modern, responsive design with gradient backgrounds
+- 🔒 **Secure**: API keys are not stored, used only for the request
+- ⚡ **Fast**: Built with FastAPI for high performance
+- 🐍 **Python 3.13 Compatible**: Uses the latest Python features
 
 ## Requirements
 
 - Python 3.13+
-- Node.js 18+
 - OpenAI API key
 
 ## Installation
 
-### Backend Setup
+1. **Clone or download the project**
+   ```bash
+   cd test-app3
+   ```
 
-1. Clone the repository or navigate to the project directory
+2. **Create a virtual environment (recommended)**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
 
-2. Create a virtual environment:
-```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-4. Create a `.env` file in the project root:
-```bash
-touch .env
-```
-
-5. Add your OpenAI API key to the `.env` file:
-```
-OPENAI_API_KEY=your_actual_api_key_here
-```
-
-### Frontend Setup
-
-1. Navigate to the frontend directory:
-```bash
-cd frontend
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Create a `.env.local` file:
-```bash
-touch .env.local
-```
-
-4. Add the backend API URL:
-```
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
+4. **Set up your OpenAI API key**
+   ```bash
+   # Copy the environment template
+   cp env_template.txt .env
+   
+   # Edit the .env file and add your actual API key
+   # Replace 'your_openai_api_key_here' with your real OpenAI API key
+   ```
 
 ## Usage
 
-### Running the Backend
+1. **Get your OpenAI API key**
+   - Visit [OpenAI Platform](https://platform.openai.com/api-keys)
+   - Create a new API key
+   - Add it to your `.env` file (see installation step 4)
 
-From the root directory:
+2. **Run the application**
+   ```bash
+   python main.py
+   ```
+
+3. **Open your browser**
+   - Go to `http://localhost:8000`
+   - Select your dietary preference
+   - Click "Generate My Recipe"
+
+## API Endpoints
+
+### GET `/`
+- Serves the main web interface
+
+### POST `/generate-recipe`
+- Generates a recipe based on dietary preferences
+- **Parameters:**
+  - `dietary_preference`: `vegetarian`, `vegan`, or `no_restrictions`
+- **Returns:** JSON with recipe details
+- **Note:** API key is automatically loaded from environment variables
+
+## Example Usage
 
 ```bash
-# Using Python directly
-python main.py
-
-# Or using uvicorn
-uvicorn main:app --reload
+curl -X POST "http://localhost:8000/generate-recipe" \
+     -H "Content-Type: application/x-www-form-urlencoded" \
+     -d "dietary_preference=vegetarian"
 ```
-
-The API will be available at `http://localhost:8000`
-
-### Running the Frontend
-
-From the frontend directory:
-
-```bash
-cd frontend
-npm run dev
-```
-
-The frontend will be available at `http://localhost:3000`
-
-### Full Stack Development
-
-Open two terminal windows:
-
-**Terminal 1 (Backend):**
-```bash
-uvicorn main:app --reload
-```
-
-**Terminal 2 (Frontend):**
-```bash
-cd frontend
-npm run dev
-```
-
-Then visit `http://localhost:3000` in your browser!
-
-### API Endpoints
-
-#### GET `/`
-Root endpoint with API information
-
-#### POST `/recipe`
-Get a dinner recipe based on dietary preference
-
-**Request Body:**
-```json
-{
-  "diet_type": "vegetarian"  // or "vegan"
-}
-```
-
-**Response:**
-```json
-{
-  "diet_type": "vegetarian",
-  "recipe": "Recipe name\n\nCooking time: ...\n\nIngredients:\n..."
-}
-```
-
-#### GET `/health`
-Health check endpoint
-
-### Using the API
-
-#### Using cURL:
-```bash
-curl -X POST "http://localhost:8000/recipe" \
-  -H "Content-Type: application/json" \
-  -d '{"diet_type": "vegetarian"}'
-```
-
-#### Using Python requests:
-```python
-import requests
-
-response = requests.post(
-    "http://localhost:8000/recipe",
-    json={"diet_type": "vegan"}
-)
-print(response.json())
-```
-
-#### Using the Interactive Docs:
-Visit `http://localhost:8000/docs` in your browser for an interactive Swagger UI where you can test the API directly.
 
 ## Project Structure
 
 ```
 test-app3/
 ├── main.py              # FastAPI application
-├── api/
-│   └── index.py        # Vercel serverless handler
 ├── requirements.txt     # Python dependencies
-├── vercel.json         # Backend Vercel config
-├── .env                # Backend environment variables (create this)
-├── .vercelignore       # Files to ignore in backend deployment
-├── README.md           # This file
-├── DEPLOYMENT.md       # Deployment guide
-├── LICENSE            # License file
-└── frontend/
-    ├── app/            # Next.js app directory
-    ├── components/     # React components
-    ├── lib/           # Utilities
-    ├── public/        # Static assets
-    ├── package.json   # Frontend dependencies
-    ├── .env.local     # Frontend environment variables (create this)
-    └── .env.example   # Example frontend environment file
+├── env_template.txt     # Environment variables template
+├── .env                 # Your environment variables (create this)
+├── templates/
+│   └── index.html      # Web interface template
+├── static/             # Static files (currently empty)
+└── README.md           # This file
 ```
 
-## Configuration
+## Dependencies
 
-### Backend Environment Variables (.env)
+- **FastAPI 0.115.6**: Modern, fast web framework
+- **OpenAI 1.51.0**: Official OpenAI Python client
+- **Uvicorn**: ASGI server for FastAPI
+- **Jinja2**: Template engine
+- **Pydantic**: Data validation
 
-- `OPENAI_API_KEY`: Your OpenAI API key (required)
+## Security Notes
 
-### Frontend Environment Variables (.env.local)
+- 🔒 API keys are stored securely in your local `.env` file
+- 🔒 Keys are loaded from environment variables at runtime
+- 🔒 No user data is persisted
+- 🔒 The `.env` file is not tracked by git (add it to `.gitignore`)
 
-- `NEXT_PUBLIC_API_URL`: Backend API URL (default: http://localhost:8000)
+## Troubleshooting
 
-## Deployment to Vercel
+### Common Issues
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
+1. **"OpenAI API key not found" error**
+   - Make sure you've created a `.env` file with your API key
+   - Verify the `.env` file contains `OPENAI_API_KEY=your_actual_key_here`
+   - Check that your API key has sufficient credits
 
-### Quick Deploy
+2. **"Error generating recipe" error**
+   - Verify your OpenAI API key is valid in the `.env` file
+   - Check your internet connection
+   - Ensure you have OpenAI API credits
 
-**Backend:**
+3. **Port already in use**
+   - The app runs on port 8000 by default
+   - If busy, modify `main.py` to use a different port
+
+### Development
+
+To run in development mode with auto-reload:
 ```bash
-vercel
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
-
-**Frontend:**
-```bash
-cd frontend
-vercel
-```
-
-Make sure to set environment variables in Vercel dashboard:
-- Backend: `OPENAI_API_KEY`
-- Frontend: `NEXT_PUBLIC_API_URL`
 
 ## License
 
-See LICENSE file for details.
+This project is open source and available under the MIT License.
 
-## Technology Stack
+## Deployment
 
-### Backend
-- FastAPI (Python 3.13+)
-- OpenAI GPT-4 API
-- Uvicorn server
-- python-dotenv
+### Deploy to Vercel (Recommended)
 
-### Frontend
-- Next.js 15
-- React 18.3.1
-- TypeScript
-- Tailwind CSS
-- shadcn/ui components
-- vaul 1.1.1
+This app is configured for easy deployment to Vercel:
 
-## Notes
+1. **Push to Git repository** (GitHub, GitLab, or Bitbucket)
+2. **Connect to Vercel** and import your repository
+3. **Set environment variables** in Vercel dashboard:
+   - `OPENAI_API_KEY`: Your OpenAI API key
+4. **Deploy!** Vercel will automatically build and deploy
 
-- The app uses GPT-4 model by default. Make sure your OpenAI account has access to GPT-4.
-- Each recipe generation will consume OpenAI API credits.
-- All libraries are compatible with Python 3.13.
-- React version 18.3.1 ensures compatibility with all dependencies.
-- Frontend uses modern Next.js App Router.
+For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
+### Other Deployment Options
+
+- **Railway**: Compatible with standard FastAPI deployment
+- **Heroku**: Use the `main.py` entry point
+- **DigitalOcean App Platform**: Standard Python deployment
+- **AWS Lambda**: Requires additional serverless configuration
+
+## Contributing
+
+Feel free to submit issues and enhancement requests!
+
+---
+
+**Enjoy cooking with AI! 🍳✨**

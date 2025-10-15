@@ -1,246 +1,192 @@
-# Deployment Guide
+# Vercel Deployment Guide 🚀
 
-This guide explains how to deploy both the FastAPI backend and Next.js frontend to Vercel.
+This guide will help you deploy your Diet Recipe Generator FastAPI app to Vercel.
 
 ## Prerequisites
 
-- [Vercel account](https://vercel.com)
-- [Vercel CLI](https://vercel.com/cli) installed: `npm i -g vercel`
+- Vercel account (free at [vercel.com](https://vercel.com))
 - OpenAI API key
+- Git repository (GitHub, GitLab, or Bitbucket)
 
-## Project Structure
+## Deployment Steps
 
+### 1. Prepare Your Repository
+
+Make sure your project structure looks like this:
 ```
 test-app3/
-├── main.py              # FastAPI backend
 ├── api/
-│   └── index.py        # Vercel serverless handler
-├── vercel.json         # Backend deployment config
-├── requirements.txt    # Python dependencies
-├── .env                # Backend environment variables (local)
-└── frontend/
-    ├── app/            # Next.js app
-    ├── components/     # React components
-    ├── package.json    # Frontend dependencies
-    ├── .env.local      # Frontend environment variables (local)
-    └── vercel.json     # Frontend deployment config (auto-generated)
+│   └── index.py          # Vercel serverless function
+├── templates/
+│   └── index.html        # Web interface
+├── static/               # Static files (if any)
+├── requirements.txt      # Python dependencies
+├── vercel.json          # Vercel configuration
+├── env_template.txt     # Environment template
+└── README.md
 ```
 
-## Local Development
+### 2. Set Up Environment Variables
 
-### Backend (FastAPI)
+Before deploying, you'll need to set up your OpenAI API key in Vercel:
 
-1. Navigate to the root directory
-2. Activate your virtual environment
-3. Create `.env` file with:
-   ```
-   OPENAI_API_KEY=your_openai_api_key_here
-   ```
-4. Run the backend:
+1. **Via Vercel Dashboard:**
+   - Go to your project in Vercel dashboard
+   - Navigate to Settings → Environment Variables
+   - Add: `OPENAI_API_KEY` = `your_actual_api_key_here`
+
+2. **Via Vercel CLI:**
    ```bash
-   uvicorn main:app --reload
+   vercel env add OPENAI_API_KEY
+   # Enter your API key when prompted
    ```
-   Backend will be available at `http://localhost:8000`
 
-### Frontend (Next.js)
+### 3. Deploy to Vercel
 
-1. Navigate to the frontend directory:
+#### Option A: Deploy via Vercel Dashboard (Recommended)
+
+1. **Push to Git:**
    ```bash
-   cd frontend
+   git add .
+   git commit -m "Add Vercel deployment configuration"
+   git push origin main
    ```
-2. Install dependencies:
+
+2. **Import to Vercel:**
+   - Go to [vercel.com/dashboard](https://vercel.com/dashboard)
+   - Click "New Project"
+   - Import your Git repository
+   - Vercel will auto-detect it's a Python project
+   - Add your environment variables
+   - Click "Deploy"
+
+#### Option B: Deploy via Vercel CLI
+
+1. **Install Vercel CLI:**
    ```bash
-   npm install
+   npm install -g vercel
    ```
-3. Create `.env.local` file with:
-   ```
-   NEXT_PUBLIC_API_URL=http://localhost:8000
-   ```
-4. Run the frontend:
+
+2. **Login to Vercel:**
    ```bash
-   npm run dev
+   vercel login
    ```
-   Frontend will be available at `http://localhost:3000`
 
-## Deploying to Vercel
+3. **Deploy:**
+   ```bash
+   vercel
+   ```
 
-### Option 1: Deploy via Vercel Dashboard (Recommended)
+4. **Add Environment Variables:**
+   ```bash
+   vercel env add OPENAI_API_KEY
+   ```
 
-#### Deploy Backend
+5. **Redeploy with Environment Variables:**
+   ```bash
+   vercel --prod
+   ```
 
-1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
-2. Click "Add New" → "Project"
-3. Import your repository
-4. Configure:
-   - **Framework Preset:** Other
-   - **Root Directory:** `./` (root)
-   - **Build Command:** Leave empty
-   - **Output Directory:** Leave empty
-5. Add Environment Variable:
-   - Key: `OPENAI_API_KEY`
-   - Value: Your OpenAI API key
-6. Click "Deploy"
-7. Note your backend URL (e.g., `https://your-backend.vercel.app`)
+### 4. Configure Domain (Optional)
 
-#### Deploy Frontend
+- Vercel provides a free `.vercel.app` domain
+- You can add a custom domain in Project Settings → Domains
 
-1. In Vercel Dashboard, click "Add New" → "Project"
-2. Import the same repository
-3. Configure:
-   - **Framework Preset:** Next.js
-   - **Root Directory:** `./frontend`
-   - **Build Command:** `npm run build`
-   - **Output Directory:** `.next`
-4. Add Environment Variable:
-   - Key: `NEXT_PUBLIC_API_URL`
-   - Value: Your backend URL from step 7 above
-5. Click "Deploy"
+## Important Configuration Notes
 
-### Option 2: Deploy via Vercel CLI
+### Vercel.json Configuration
 
-#### Deploy Backend
+The `vercel.json` file configures:
+- **Builds**: Python serverless function and static files
+- **Routes**: All requests go to the FastAPI app
+- **Environment**: Links to your OpenAI API key
 
-```bash
-# From the root directory
-vercel
+### API Structure
 
-# Follow the prompts:
-# Set up and deploy? [Y/n] y
-# Which scope? Select your account
-# Link to existing project? [y/N] n
-# What's your project's name? diet-app-backend
-# In which directory is your code located? ./
+The `api/index.py` file:
+- Contains the same FastAPI app as `main.py`
+- Includes Vercel serverless function handler
+- Avoids proxy conflicts by not passing proxy parameters to OpenAI client
 
-# Add environment variable
-vercel env add OPENAI_API_KEY
-# Paste your OpenAI API key when prompted
-# Select Production, Preview, Development
+### Dependency Management
 
-# Deploy to production
-vercel --prod
-```
-
-Note the deployment URL for your backend.
-
-#### Deploy Frontend
-
-```bash
-# Navigate to frontend directory
-cd frontend
-
-# Deploy
-vercel
-
-# Follow the prompts:
-# Set up and deploy? [Y/n] y
-# Which scope? Select your account
-# Link to existing project? [y/N] n
-# What's your project's name? diet-app-frontend
-# In which directory is your code located? ./
-
-# Add environment variable with your backend URL
-vercel env add NEXT_PUBLIC_API_URL
-# Enter your backend URL (from backend deployment)
-# Select Production, Preview, Development
-
-# Deploy to production
-vercel --prod
-```
-
-## Environment Variables
-
-### Backend (.env)
-```
-OPENAI_API_KEY=sk-...
-```
-
-### Frontend (.env.local)
-```
-NEXT_PUBLIC_API_URL=https://your-backend.vercel.app
-```
-
-## Vercel Configuration Files
-
-### Backend (vercel.json in root)
-```json
-{
-  "version": 2,
-  "builds": [
-    {
-      "src": "main.py",
-      "use": "@vercel/python"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "main.py"
-    }
-  ]
-}
-```
-
-### Frontend
-Next.js is auto-detected by Vercel, no configuration needed.
+The `requirements.txt` includes:
+- `httpx==0.27.0`: Ensures compatible HTTP client version
+- `openai==1.51.0`: Latest OpenAI SDK without proxy conflicts
 
 ## Troubleshooting
 
-### Backend Issues
+### Common Issues
 
-1. **Import errors:** Make sure all dependencies in `requirements.txt` are compatible with Vercel's Python runtime
-2. **CORS errors:** Backend is configured to accept requests from Vercel domains
-3. **Environment variables:** Ensure `OPENAI_API_KEY` is set in Vercel dashboard
+1. **"Module not found" errors:**
+   - Ensure all dependencies are in `requirements.txt`
+   - Check that `api/index.py` imports are correct
 
-### Frontend Issues
+2. **"OpenAI API key not found" errors:**
+   - Verify environment variable is set in Vercel dashboard
+   - Check variable name is exactly `OPENAI_API_KEY`
 
-1. **API connection:** Verify `NEXT_PUBLIC_API_URL` points to your deployed backend
-2. **Build errors:** Check that React 18.3.1 and vaul 1.1.1 are properly installed
-3. **Environment variables:** Ensure they're prefixed with `NEXT_PUBLIC_` for client-side access
+3. **Proxy/HTTP errors:**
+   - The configuration avoids proxy conflicts
+   - OpenAI client is initialized without proxy parameters
 
-## Post-Deployment
+4. **Build failures:**
+   - Check Python version compatibility
+   - Ensure all file paths are correct
 
-1. Test the frontend URL in your browser
-2. Select a diet type and generate a recipe
-3. Check Vercel deployment logs if issues occur
-4. Monitor API usage in OpenAI dashboard
+### Environment Variables in Vercel
 
-## Updating Deployments
-
-### Backend
+To check your environment variables:
 ```bash
-# Make changes to main.py or requirements.txt
-git push  # If connected to GitHub
-# or
-vercel --prod  # Direct deployment
+vercel env ls
 ```
 
-### Frontend
+To update an environment variable:
 ```bash
-cd frontend
-# Make changes
-git push  # If connected to GitHub
-# or
-vercel --prod  # Direct deployment
+vercel env rm OPENAI_API_KEY
+vercel env add OPENAI_API_KEY
 ```
 
-## Custom Domains
+## Local Development with Vercel
 
-You can add custom domains in the Vercel dashboard:
-1. Go to your project settings
-2. Navigate to "Domains"
-3. Add your custom domain
-4. Update DNS records as instructed
-5. Update `NEXT_PUBLIC_API_URL` if backend domain changed
+You can test your Vercel deployment locally:
 
-## Cost Considerations
+```bash
+# Install Vercel CLI
+npm install -g vercel
 
-- Vercel: Free tier includes hobby projects
-- OpenAI API: Pay per token usage
-- Monitor usage to avoid unexpected costs
+# Run local development server
+vercel dev
+```
 
-## Support
+This will:
+- Simulate Vercel's serverless environment
+- Use your local `.env` file
+- Run on `http://localhost:3000`
 
-- [Vercel Documentation](https://vercel.com/docs)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [FastAPI Documentation](https://fastapi.tiangolo.com)
+## Performance Considerations
 
+- **Cold Starts**: First request may be slower due to serverless cold start
+- **Memory Limits**: Vercel free tier has memory limits (1GB)
+- **Timeout**: Functions timeout after 10 seconds (free tier)
+
+## Cost
+
+- **Free Tier**: Includes 100GB bandwidth, 1000 function invocations
+- **Pro Tier**: $20/month for higher limits and better performance
+
+## Security
+
+- API keys are stored securely in Vercel's environment variables
+- No sensitive data is committed to your repository
+- HTTPS is enabled by default
+
+## Monitoring
+
+- Check function logs in Vercel dashboard
+- Monitor performance metrics
+- Set up alerts for errors
+
+---
+
+Your Diet Recipe Generator is now ready to serve users worldwide! 🌍✨

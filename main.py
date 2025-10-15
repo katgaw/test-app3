@@ -1,128 +1,132 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request, Form, HTTPException
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from typing import Literal
-import os
-from dotenv import load_dotenv
 from openai import OpenAI
+import os
+from typing import Optional
+import uvicorn
+from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment variables from .env file
 load_dotenv()
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="Diet Recipe App",
-    description="Get simple dinner recipes based on your dietary preferences",
-    version="1.0.0"
-)
+app = FastAPI(title="Diet Recipe Generator", description="Get personalized dinner recipes based on your dietary preferences")
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://*.vercel.app",
-        "*"  # Allow all origins for development
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Initialize OpenAI client lazily
-def get_openai_client():
-    """Get OpenAI client, initializing it lazily"""
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise HTTPException(
-            status_code=500,
-            detail="OPENAI_API_KEY not configured. Please set it in environment variables."
-        )
-    return OpenAI(api_key=api_key)
+# Templates
+templates = Jinja2Templates(directory="templates")
 
-
-# Request model
 class RecipeRequest(BaseModel):
-    diet_type: Literal["vegetarian", "vegan"]
+    dietary_preference: str
 
-
-# Response model
 class RecipeResponse(BaseModel):
-    diet_type: str
     recipe: str
+    ingredients: list[str]
+    instructions: list[str]
 
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    """Serve the main page"""
+    return templates.TemplateResponse("index.html", {"request": request})
 
-@app.get("/")
-async def root():
-    """Root endpoint with API information"""
-    return {
-        "message": "Welcome to the Diet Recipe App!",
-        "endpoints": {
-            "/recipe": "POST - Get a dinner recipe based on your diet",
-            "/docs": "GET - Interactive API documentation"
-        }
-    }
-
-
-@app.post("/recipe", response_model=RecipeResponse)
-async def get_recipe(request: RecipeRequest):
-    """
-    Get a simple dinner recipe based on dietary preference
+@app.post("/generate-recipe", response_model=RecipeResponse)
+async def generate_recipe(
+    dietary_preference: str = Form(...)
+):
+    """Generate a dinner recipe based on dietary preferences"""
     
-    - **diet_type**: Either 'vegetarian' or 'vegan'
-    """
+    # Get API key from environment variables
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    
+    if not openai_api_key:
+        raise HTTPException(status_code=500, detail="OpenAI API key not found. Please set OPENAI_API_KEY in your .env file.")
+    
     try:
-        # Get OpenAI client
-        client = get_openai_client()
+        client = OpenAI(api_key=openai_api_key)
         
-        # Create prompt for GPT-4
-        prompt = f"""Generate a simple {request.diet_type} dinner recipe. 
-        Include:
-        - Recipe name
-        - Cooking time
-        - Ingredients list
-        - Step-by-step instructions
+        # Create a prompt based on dietary preference
+        dietary_instructions = {
+            "vegetarian": "vegetarian (no meat, but dairy and eggs are okay)",
+            "vegan": "vegan (no meat, dairy, eggs, or any animal products)",
+            "no_restrictions": "no dietary restrictions"
+        }
         
-        Keep it simple and easy to follow. Make it delicious and healthy."""
+        preference = dietary_instructions.get(dietary_preference, dietary_preference)
         
-        # Call OpenAI API
+        prompt = f"""Generate a simple, delicious dinner recipe that is {preference}. 
+        
+        Please provide:
+        1. A catchy recipe name
+        2. A brief description (1-2 sentences)
+        3. List of ingredients (with quantities)
+        4. Simple step-by-step cooking instructions
+        
+        Make it something that can be prepared in 30-45 minutes with common ingredients. 
+        Format your response clearly with sections for Name, Description, Ingredients, and Instructions."""
+        
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {
-                    "role": "system",
-                    "content": "You are a helpful chef assistant specializing in simple, healthy recipes."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
+                {"role": "system", "content": "You are a helpful cooking assistant that creates simple, delicious recipes."},
+                {"role": "user", "content": prompt}
             ],
-            temperature=0.7,
-            max_tokens=500
+            max_tokens=800,
+            temperature=0.7
         )
         
         recipe_text = response.choices[0].message.content
         
+        # Parse the recipe into structured format
+        lines = recipe_text.strip().split('\n')
+        ingredients = []
+        instructions = []
+        
+        in_ingredients = False
+        in_instructions = False
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+                
+            if 'ingredient' in line.lower() and ':' in line:
+                in_ingredients = True
+                in_instructions = False
+                continue
+            elif 'instruction' in line.lower() and ':' in line:
+                in_ingredients = False
+                in_instructions = True
+                continue
+            elif line.lower().startswith(('name:', 'description:', 'recipe name:')):
+                in_ingredients = False
+                in_instructions = False
+                continue
+                
+            if in_ingredients and line.startswith(('•', '-', '*')):
+                ingredients.append(line[1:].strip())
+            elif in_instructions and (line.startswith(('•', '-', '*')) or line[0].isdigit()):
+                if line[0].isdigit() and '.' in line:
+                    instructions.append(line.split('.', 1)[1].strip())
+                else:
+                    instructions.append(line[1:].strip() if line.startswith(('•', '-', '*')) else line)
+        
+        # If parsing failed, return the raw text
+        if not ingredients and not instructions:
+            ingredients = ["See recipe text below"]
+            instructions = [recipe_text]
+        
         return RecipeResponse(
-            diet_type=request.diet_type,
-            recipe=recipe_text
+            recipe=recipe_text,
+            ingredients=ingredients,
+            instructions=instructions
         )
         
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error generating recipe: {str(e)}"
-        )
-
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy"}
-
+        raise HTTPException(status_code=500, detail=f"Error generating recipe: {str(e)}")
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-

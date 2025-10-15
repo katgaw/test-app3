@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diet Recipe Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .recipe-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .form-card {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold text-white mb-4">
+                <i class="fas fa-utensils mr-4"></i>
+                Diet Recipe Generator
+            </h1>
+            <p class="text-xl text-white opacity-90">
+                Get personalized dinner recipes based on your dietary preferences
+            </p>
+            <p class="text-lg text-white opacity-75 mt-2">
+                <i class="fas fa-info-circle mr-2"></i>
+                API key is automatically loaded from your environment
+            </p>
+        </div>
+
+        <!-- Main Form -->
+        <div class="max-w-2xl mx-auto mb-8">
+            <div class="form-card rounded-2xl shadow-2xl p-8">
+                <form id="recipeForm" class="space-y-6">
+                    <div>
+                        <label for="dietary_preference" class="block text-white text-lg font-semibold mb-3">
+                            <i class="fas fa-leaf mr-2"></i>
+                            Choose Your Dietary Preference
+                        </label>
+                        <select id="dietary_preference" name="dietary_preference" required
+                                class="w-full px-4 py-3 rounded-lg border-2 border-white bg-white text-gray-800 text-lg focus:ring-4 focus:ring-blue-300 focus:border-blue-500">
+                            <option value="">Select your dietary preference</option>
+                            <option value="vegetarian">Vegetarian (No meat, but dairy and eggs okay)</option>
+                            <option value="vegan">Vegan (No animal products)</option>
+                            <option value="no_restrictions">No Dietary Restrictions</option>
+                        </select>
+                    </div>
+
+
+                    <button type="submit" id="submitBtn"
+                            class="w-full bg-white text-blue-600 font-bold py-4 px-6 rounded-lg text-lg hover:bg-gray-100 transition duration-300 transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-magic mr-2"></i>
+                        Generate My Recipe
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading" class="hidden text-center mb-8">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+            <p class="text-white text-lg mt-4">Generating your perfect recipe...</p>
+        </div>
+
+        <!-- Recipe Results -->
+        <div id="recipeResult" class="hidden max-w-4xl mx-auto">
+            <div class="recipe-card rounded-2xl shadow-2xl p-8 text-white">
+                <h2 class="text-3xl font-bold mb-6 text-center">
+                    <i class="fas fa-chef-hat mr-3"></i>
+                    Your Dinner Recipe
+                </h2>
+                <div id="recipeContent"></div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="hidden max-w-2xl mx-auto">
+            <div class="bg-red-500 text-white rounded-2xl shadow-2xl p-6">
+                <h3 class="text-xl font-bold mb-2">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    Error
+                </h3>
+                <p id="errorText"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('recipeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const recipeResult = document.getElementById('recipeResult');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Show loading, hide other elements
+            loading.classList.remove('hidden');
+            recipeResult.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/generate-recipe', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to generate recipe');
+                }
+                
+                const data = await response.json();
+                displayRecipe(data);
+                
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                loading.classList.add('hidden');
+                submitBtn.disabled = false;
+            }
+        });
+        
+        function displayRecipe(data) {
+            const recipeContent = document.getElementById('recipeContent');
+            
+            // Display the full recipe text with better formatting
+            let html = `
+                <div class="bg-white bg-opacity-20 rounded-lg p-6 mb-6">
+                    <div class="whitespace-pre-wrap text-lg leading-relaxed">${data.recipe.replace(/\n/g, '<br>')}</div>
+                </div>
+            `;
+            
+            recipeContent.innerHTML = html;
+            document.getElementById('recipeResult').classList.remove('hidden');
+        }
+        
+        function showError(message) {
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMessage').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
